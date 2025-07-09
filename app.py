@@ -1,48 +1,60 @@
+import psycopg2
 import streamlit as st
 import pandas as pd
-import psycopg2
 
 # Function to connect to Postgres database and fetch unique routes
 def get_unique_routes():
+    conn = None
     try:
         conn = psycopg2.connect(
-            host='dpg-d1n3hkfdiees73emhn6g-a',
+            host='dpg-d1n3hkfdiees73emhn6g-a.oregon-postgres.render.com',
             database='db_apbus',
             user='db_apbus_user',
             password='ypJsjZYMOMqsy5wd2nX0Tm4WqWRuZj3t',
             port=5432
         )
+        conn.autocommit = True  # For read-only queries
         cursor = conn.cursor()
-        cursor.execute("SELECT DISTINCT route_name FROM AP_bus ORDER BY route_name")
+        
+        cursor.execute('SELECT DISTINCT route_name FROM "AP_bus" ORDER BY route_name')
         routes = [row[0] for row in cursor.fetchall()]
+        
         cursor.close()
-        conn.close()
         return routes
+
     except Exception as e:
+        if conn:
+            conn.rollback()
         st.error(f"Database connection error: {str(e)}")
         return []
 
+    finally:
+        if conn:
+            conn.close()
+
 # Function to fetch bus data based on filters
 def get_bus_data(route_name, search_text, min_rating, status_filter):
+    conn = None
     try:
         conn = psycopg2.connect(
-            host='dpg-d1n3hkfdiees73emhn6g-a',
+            host='dpg-d1n3hkfdiees73emhn6g-a.oregon-postgres.render.com',
             database='db_apbus',
             user='db_apbus_user',
             password='ypJsjZYMOMqsy5wd2nX0Tm4WqWRuZj3t',
             port=5432
         )
         cursor = conn.cursor()
+
         query = """
             SELECT route_name, bus_name, bus_type, duration, price, rating, no_of_ratings, review_status
-            FROM AP_bus
+            FROM "AP_bus"
             WHERE route_name = %s
         """
         params = [route_name]
         
         if search_text:
             query += " AND bus_name ILIKE %s"
-            params.append('%' + search_text + '%')
+            params.append(f'%{search_text}%')
         
         if min_rating is not None:
             query += " AND rating >= %s"
@@ -60,12 +72,20 @@ def get_bus_data(route_name, search_text, min_rating, status_filter):
             'Route Name', 'Bus Name', 'Bus Type', 'Duration', 'Price',
             'Rating', 'No. of Ratings', 'Review Status'
         ])
+        
         cursor.close()
-        conn.close()
         return df
+
     except Exception as e:
+        if conn:
+            conn.rollback()
         st.error(f"Error fetching bus data: {str(e)}")
         return pd.DataFrame()
+
+    finally:
+        if conn:
+            conn.close()
+
 
 # --------------------------- Streamlit App ---------------------------
 
