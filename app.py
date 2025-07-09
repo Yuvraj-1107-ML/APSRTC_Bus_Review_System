@@ -6,7 +6,7 @@ import psycopg2
 def get_unique_routes():
     try:
         conn = psycopg2.connect(
-            host='dpg-d1n3hkfdiees73emhn6g-a.oregon-postgres.render.com',
+            host='dpg-d1n3hkfdiees73emhn6g-a',
             database='db_apbus',
             user='db_apbus_user',
             password='ypJsjZYMOMqsy5wd2nX0Tm4WqWRuZj3t',
